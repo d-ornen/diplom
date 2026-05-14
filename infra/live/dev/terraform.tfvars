@@ -24,3 +24,5 @@ app_prod_replicas           = 1
 app_shadow_replicas         = 1
 enable_shadow_mirroring     = true
 mirror_percentage           = 100
+metrics_namespace           = "monitoring"
+metrics_export_root         = "/var/log/shadow-metrics"

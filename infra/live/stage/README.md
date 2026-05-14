@@ -39,5 +39,6 @@ terraform apply -auto-approve
 - Telecom identity: `mcc`, `mnc`
 - Telecom platform scaling: `platform_replicas`
 - API workload scaling: `app_prod_replicas`, `app_shadow_replicas`
+- Metrics layer: `metrics_namespace`, `metrics_export_root`
 
 Re-run `terraform apply -auto-approve` after changing the toggle.

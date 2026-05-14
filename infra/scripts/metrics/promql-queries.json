@@ -1,0 +1,44 @@
+{
+  "queries": [
+    {
+      "name": "request_rate_total",
+      "description": "Total API request rate observed by Istio.",
+      "query": "sum(rate(istio_requests_total{destination_service_name=\"api\"}[5m]))"
+    },
+    {
+      "name": "error_rate_5xx",
+      "description": "5xx request error rate at API service.",
+      "query": "sum(rate(istio_requests_total{destination_service_name=\"api\",response_code=~\"5..\"}[5m])) / clamp_min(sum(rate(istio_requests_total{destination_service_name=\"api\"}[5m])), 0.001)"
+    },
+    {
+      "name": "latency_p95_seconds",
+      "description": "API p95 latency (seconds).",
+      "query": "histogram_quantile(0.95, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"api\"}[5m]))) / 1000"
+    },
+    {
+      "name": "latency_p99_seconds",
+      "description": "API p99 latency (seconds).",
+      "query": "histogram_quantile(0.99, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"api\"}[5m]))) / 1000"
+    },
+    {
+      "name": "prod_request_count",
+      "description": "Request count toward api-prod (v1) pods.",
+      "query": "sum(increase(istio_requests_total{destination_workload=\"api-prod\"}[5m]))"
+    },
+    {
+      "name": "shadow_request_count",
+      "description": "Request count toward api-shadow (v2) pods.",
+      "query": "sum(increase(istio_requests_total{destination_workload=\"api-shadow\"}[5m]))"
+    },
+    {
+      "name": "pod_cpu_usage_rate",
+      "description": "CPU usage rate for key pods.",
+      "query": "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=~\"shadow-apps|telecom\",pod=~\"api-prod.*|api-shadow.*|open5gs.*|ueransim.*|istio-proxy.*\",container!=\"\",container!=\"POD\"}[5m]))"
+    },
+    {
+      "name": "pod_memory_working_set_bytes",
+      "description": "Memory working set bytes for key pods.",
+      "query": "sum by (namespace, pod) (container_memory_working_set_bytes{namespace=~\"shadow-apps|telecom\",pod=~\"api-prod.*|api-shadow.*|open5gs.*|ueransim.*|istio-proxy.*\",container!=\"\",container!=\"POD\"})"
+    }
+  ]
+}

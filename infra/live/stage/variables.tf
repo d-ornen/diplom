@@ -136,3 +136,15 @@ variable "mirror_percentage" {
     error_message = "mirror_percentage must be between 0 and 100."
   }
 }
+
+variable "metrics_namespace" {
+  description = "Namespace used by metrics collection layer."
+  type        = string
+  default     = "monitoring"
+}
+
+variable "metrics_export_root" {
+  description = "Remote host folder for metrics exports."
+  type        = string
+  default     = "/var/log/shadow-metrics"
+}

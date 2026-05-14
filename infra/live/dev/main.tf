@@ -92,6 +92,19 @@ module "apps" {
   depends_on = [module.platform_apps]
 }
 
+module "metrics" {
+  source = "../../modules/metrics"
+
+  host              = var.debian_host
+  ssh_user          = var.ssh_user
+  ssh_port          = var.ssh_port
+  ssh_private_key   = local.ssh_private_key
+  metrics_namespace = var.metrics_namespace
+  metrics_export_root = var.metrics_export_root
+
+  depends_on = [module.apps]
+}
+
 provider "kubernetes" {
   config_path = module.base.local_kubeconfig_path
 }
