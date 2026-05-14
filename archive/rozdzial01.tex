@@ -1,0 +1,54 @@
+\chapter{Wstęp}
+\section{Wprowadzenie}
+Sieci 5G Core są rozwijane w modelu \emph{cloud native}, w którym funkcje sieciowe (CNF) są uruchamiane jako kontenery i zarządzane przez platformy orkiestracyjne, takie jak Kubernetes~\cite{3gpp23_501,kubernetesDocs}. Taka architektura zwiększa elastyczność i skalowalność, ale jednocześnie podnosi ryzyko operacyjne związane z częstymi wdrożeniami nowych wersji oprogramowania.
+
+W środowiskach telekomunikacyjnych nawet krótkotrwała regresja może prowadzić do zakłóceń sygnalizacji, wzrostu opóźnień oraz degradacji jakości usług dla dużej liczby abonentów~\cite{3gpp23_502}. W związku z tym konieczne jest stosowanie metod wdrożeniowych, które pozwalają testować nowe wersje funkcji sieciowych na realnym ruchu, ale bez wpływu na użytkowników końcowych.
+
+\section{Opis problemu}
+W klasycznym modelu wdrożeń aktualizacja funkcji 5G Core bywa wykonywana bezpośrednio na ścieżce produkcyjnej. Przy dużej skali obciążenia i współzależnościach między funkcjami SBA (\emph{Service-Based Architecture}) taka praktyka zwiększa prawdopodobieństwo:
+\begin{itemize}
+    \item niekontrolowanego wzrostu błędów sygnalizacyjnych,
+    \item przeciążenia wybranych komponentów,
+    \item uszkodzenia lub nadpisania stanu w repozytoriach danych abonentów,
+    \item trudności w szybkim wycofaniu zmiany.
+\end{itemize}
+
+Szczególnie wrażliwym obszarem jest zależność funkcji kontrolnych (np. SMF) od danych przechowywanych poza samą funkcją, m.in. w UDR/UDSF. Jeżeli nowa wersja wykonuje operacje zapisu na produkcyjnym stanie, test wdrożeniowy przestaje być bezpieczny.
+
+\section{Cel i zakres pracy}
+Głównym celem pracy jest opracowanie kompletnej architektury \emph{Shadow Deploy} dla funkcji SMF w 5G Core, która:
+\begin{itemize}
+    \item wykorzystuje Istio/Envoy do bezinwazyjnego klonowania ruchu,
+    \item izoluje warstwę danych wersji testowej od warstwy produkcyjnej,
+    \item wspiera automatyczną ocenę jakości na podstawie metryk i progów SLO.
+\end{itemize}
+
+Zakres pracy obejmuje przygotowanie artefaktów infrastrukturalnych i konfiguracji:
+\begin{itemize}
+    \item definicji środowiska Kubernetes i namespace z aktywną iniekcją sidecarów,
+    \item manifestów SMF v1 (stabilna) i SMF v2 (shadow),
+    \item reguł routingu Istio (\texttt{DestinationRule}, \texttt{VirtualService}),
+    \item konfiguracji walidacyjnej opartej na Prometheus i Iter8,
+    \item opcjonalnego komponentu porównującego odpowiedzi (Diffy).
+\end{itemize}
+
+\section{Teza i pytania badawcze}
+W pracy przyjęto tezę, że zastosowanie architektury Shadow Deploy w 5G Core umożliwia istotne ograniczenie ryzyka wdrożeniowego przy zachowaniu realnej reprezentatywności testów.
+
+Z tezy wynikają trzy pytania badawcze:
+\begin{enumerate}
+    \item Czy mirrorowanie ruchu na poziomie Service Mesh pozwala wiarygodnie oceniać wersję kandydacką SMF bez wpływu na użytkownika?
+    \item Czy separacja stanu danych (UDR produkcyjny vs UDR shadow) eliminuje ryzyko niepożądanego zapisu podczas testów?
+    \item Czy metryki z Envoy i Prometheus są wystarczające do automatycznej decyzji \emph{pass/fail} dla nowej wersji?
+\end{enumerate}
+
+\section{Struktura pracy}
+Praca została podzielona na sześć rozdziałów:
+\begin{itemize}
+    \item Rozdział 1 definiuje kontekst problemu, cele i zakres.
+    \item Rozdział 2 opisuje wymagania, architekturę logiczną i artefakty IaC.
+    \item Rozdział 3 przedstawia implementację środowiska Shadow Deploy.
+    \item Rozdział 4 opisuje metodykę walidacji i scenariusze testowe.
+    \item Rozdział 5 prezentuje wyniki eksperymentów i ich analizę.
+    \item Rozdział 6 zawiera podsumowanie oraz kierunki dalszego rozwoju.
+\end{itemize}

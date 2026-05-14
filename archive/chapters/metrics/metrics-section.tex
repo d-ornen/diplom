@@ -1,0 +1,172 @@
+\section{Automatycznie wygenerowane metryki}
+\label{sec:auto-metrics}
+
+\IfFileExists{generated/metrics/scenario.tex}{
+    \input{generated/metrics/scenario.tex}
+    Dane pomiarowe pochodza z automatycznego eksportu metryk dla scenariusza \texttt{\MetricsScenario} (\texttt{\MetricsTimestamp}), w oknie \texttt{\MetricsWindowStart} -- \texttt{\MetricsWindowEnd} przy kroku zapytan \texttt{\MetricsStep}. Eksport zawiera \MetricsExportsCount{} zapytan, a liczba brakujacych wynikow to \MetricsMissingCount{}.
+}{
+    Brak wygenerowanych metryk. Uruchom skrypt \texttt{archive/tools/build-with-metrics.sh --metrics-dir <sciezka-do-exportu>}, aby dolaczyc dane i wykresy.
+}
+
+\ifmetricsplots
+    \IfFileExists{generated/metrics/request_rate.tsv}{
+        \begin{figure}[htbp]
+            \centering
+            \begin{tikzpicture}
+                \begin{axis}[
+                    width=\textwidth,
+                    height=0.27\textheight,
+                    date coordinates in=x,
+                    xticklabel style={rotate=35,anchor=east,font=\footnotesize},
+                    x tick label style={/pgf/number format/1000 sep=},
+                    xlabel=Czas (UTC),
+                    ylabel={Request rate [rps]},
+                    grid=both
+                ]
+                    \addplot[
+                        thick,
+                        blue
+                    ] table [col sep=tab, x=ts_iso, y=value_rps] {generated/metrics/request_rate.tsv};
+                \end{axis}
+            \end{tikzpicture}
+            \caption{Request rate w czasie.}
+        \end{figure}
+    }{}
+
+    \IfFileExists{generated/metrics/latency_p95_p99.tsv}{
+        \begin{figure}[htbp]
+            \centering
+            \begin{tikzpicture}
+                \begin{axis}[
+                    width=\textwidth,
+                    height=0.27\textheight,
+                    date coordinates in=x,
+                    xticklabel style={rotate=35,anchor=east,font=\footnotesize},
+                    x tick label style={/pgf/number format/1000 sep=},
+                    xlabel=Czas (UTC),
+                    ylabel={Opoznienie [s]},
+                    legend pos=north west,
+                    grid=both
+                ]
+                    \addplot[
+                        thick,
+                        red
+                    ] table [col sep=tab, x=ts_iso, y=p95_seconds] {generated/metrics/latency_p95_p99.tsv};
+                    \addlegendentry{p95}
+                    \addplot[
+                        thick,
+                        magenta
+                    ] table [col sep=tab, x=ts_iso, y=p99_seconds] {generated/metrics/latency_p95_p99.tsv};
+                    \addlegendentry{p99}
+                \end{axis}
+            \end{tikzpicture}
+            \caption{Latencja p95/p99 w czasie.}
+        \end{figure}
+    }{}
+
+    \IfFileExists{generated/metrics/error_rate.tsv}{
+        \begin{figure}[htbp]
+            \centering
+            \begin{tikzpicture}
+                \begin{axis}[
+                    width=\textwidth,
+                    height=0.27\textheight,
+                    date coordinates in=x,
+                    xticklabel style={rotate=35,anchor=east,font=\footnotesize},
+                    x tick label style={/pgf/number format/1000 sep=},
+                    xlabel=Czas (UTC),
+                    ylabel={Error rate [\%]},
+                    grid=both
+                ]
+                    \addplot[
+                        thick,
+                        magenta
+                    ] table [col sep=tab, x=ts_iso, y=value_percent] {generated/metrics/error_rate.tsv};
+                \end{axis}
+            \end{tikzpicture}
+            \caption{Odsetek bledow 5xx w czasie.}
+        \end{figure}
+    }{}
+
+    \IfFileExists{generated/metrics/prod_shadow_counts.tsv}{
+        \begin{figure}[htbp]
+            \centering
+            \begin{tikzpicture}
+                \begin{axis}[
+                    width=\textwidth,
+                    height=0.27\textheight,
+                    date coordinates in=x,
+                    xticklabel style={rotate=35,anchor=east,font=\footnotesize},
+                    x tick label style={/pgf/number format/1000 sep=},
+                    xlabel=Czas (UTC),
+                    ylabel={Liczba requestow},
+                    legend pos=north west,
+                    grid=both
+                ]
+                    \addplot[
+                        thick,
+                        green
+                    ] table [col sep=tab, x=ts_iso, y=prod_requests] {generated/metrics/prod_shadow_counts.tsv};
+                    \addlegendentry{prod}
+                    \addplot[
+                        thick,
+                        cyan
+                    ] table [col sep=tab, x=ts_iso, y=shadow_requests] {generated/metrics/prod_shadow_counts.tsv};
+                    \addlegendentry{shadow}
+                \end{axis}
+            \end{tikzpicture}
+            \caption{Porownanie liczby requestow prod vs shadow.}
+        \end{figure}
+    }{}
+
+    \IfFileExists{generated/metrics/pod_cpu_usage.tsv}{
+        \begin{figure}[htbp]
+            \centering
+            \begin{tikzpicture}
+                \begin{axis}[
+                    width=\textwidth,
+                    height=0.27\textheight,
+                    date coordinates in=x,
+                    xticklabel style={rotate=35,anchor=east,font=\footnotesize},
+                    x tick label style={/pgf/number format/1000 sep=},
+                    xlabel=Czas (UTC),
+                    ylabel={CPU [cores]},
+                    grid=both
+                ]
+                    \addplot[
+                        thick,
+                        blue
+                    ] table [col sep=tab, x=ts_iso, y=cpu_cores] {generated/metrics/pod_cpu_usage.tsv};
+                \end{axis}
+            \end{tikzpicture}
+            \caption{Trend zuzycia CPU dla kluczowych podow (suma).}
+        \end{figure}
+    }{}
+
+    \IfFileExists{generated/metrics/pod_memory_usage.tsv}{
+        \begin{figure}[htbp]
+            \centering
+            \begin{tikzpicture}
+                \begin{axis}[
+                    width=\textwidth,
+                    height=0.27\textheight,
+                    date coordinates in=x,
+                    xticklabel style={rotate=35,anchor=east,font=\footnotesize},
+                    x tick label style={/pgf/number format/1000 sep=},
+                    xlabel=Czas (UTC),
+                    ylabel={Pamiec [MiB]},
+                    grid=both
+                ]
+                    \addplot[
+                        thick,
+                        black
+                    ] table [col sep=tab, x=ts_iso, y=memory_mib] {generated/metrics/pod_memory_usage.tsv};
+                \end{axis}
+            \end{tikzpicture}
+            \caption{Trend zuzycia pamieci dla kluczowych podow (suma).}
+        \end{figure}
+    }{}
+\else
+    \paragraph{Uwaga}
+    Pakiet \texttt{pgfplots} nie jest dostepny, dlatego wykresy metryk nie zostaly wyrenderowane.
+\fi

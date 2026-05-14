@@ -1,0 +1,30 @@
+\pdfbookmark[0]{Streszczenie}{streszczenie.1}
+%\phantomsection
+%\addcontentsline{toc}{chapter}{Streszczenie}
+%%% Poni¿sze zosta³o niewykorzystane (tj. zrezygnowano z utworzenia nienumerowanego rozdzia³u na abstrakt)
+%%%\begingroup
+%%%\setlength\beforechapskip{48pt} % z jakiego powodu by³a maleñka ró¿nica w po³o¿eniu nag³ówka rozdzia³u numerowanego i nienumerowanego
+%%%\chapter*{\centering Abstrakt}
+%%%\endgroup
+%%%\label{sec:abstrakt}
+%%%Lorem ipsum dolor sit amet eleifend et, congue arcu. Morbi tellus sit amet, massa. Vivamus est id risus. Sed sit amet, libero. Aenean ac ipsum. Mauris vel lectus. 
+%%%
+%%%Nam id nulla a adipiscing tortor, dictum ut, lobortis urna. Donec non dui. Cras tempus orci ipsum, molestie quis, lacinia varius nunc, rhoncus purus, consectetuer congue risus. 
+\begin{abstract}
+Praca przedstawia architekturę Shadow Deploy dla funkcji 5G Core (SMF) opartą na Kubernetes, Istio i Envoy. Rozwiązanie umożliwia kopiowanie ruchu produkcyjnego do wersji testowej bez wpływu na użytkowników końcowych oraz wymusza izolację stanu danych przez oddzielną bazę UDR dla środowiska shadow.
+
+W pracy zdefiniowano model walidacji jakości oparty na metrykach obserwowalności i progach SLO. Dzięki zastosowaniu Prometheus, Iter8 oraz opcjonalnie Diffy możliwe jest automatyczne wykrywanie regresji wydajności i błędów funkcjonalnych przed uruchomieniem nowej wersji w trybie produkcyjnym.
+\end{abstract}
+\mykeywords{5G Core, Service-Based Architecture, Shadow Deploy, Kubernetes, Istio, Envoy, Traffic Mirroring, SMF, UDR, Obserwowalność, SLO, Prometheus, Iter8, CI/CD, Cloud Native Network Functions}\\ 
+% Dobrze by³oby skopiowaæ s³owa kluczowe do metadanych dokumentu pdf (w pliku Dyplom.tex)
+% Niestety, zaimplementowane makro nie robi tego z automatu, wiêc pozostaje kopiowanie rêczne.
+
+{
+\selectlanguage{english}
+\begin{abstract}
+The thesis presents a Shadow Deployment architecture for 5G Core SMF functions based on Kubernetes, Istio, and Envoy. The approach mirrors production traffic to a candidate version without affecting end users and enforces data-state isolation through a dedicated shadow UDR datastore.
+
+The work also defines a metric-driven validation model with strict SLO gates. By combining Prometheus, Iter8, and optionally Diffy, the platform can automatically detect performance regressions and functional anomalies before promoting a new release to production.
+\end{abstract}
+\mykeywords{5G Core, Service-Based Architecture, Shadow Deploy, Kubernetes, Istio, Envoy, Traffic Mirroring, SMF, UDR, Observability, SLO, Prometheus, Iter8, CI/CD, Cloud Native Network Functions}
+}

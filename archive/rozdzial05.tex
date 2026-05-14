@@ -1,0 +1,46 @@
+\chapter{Wyniki i analiza}
+
+\section{Wyniki scenariusza bazowego}
+W scenariuszu bazowym (mirrorowanie 10\% ruchu) wersja SMF v2 przetwarzała ruch bez naruszenia obsługi produkcyjnej. Zaobserwowano:
+\begin{itemize}
+    \item stabilną średnią latencję poniżej progu SLO,
+    \item brak błędów HTTP 4xx/5xx dla monitorowanego okna pomiarowego,
+    \item poprawną separację danych pomiędzy \texttt{udr-prod} i \texttt{udr-shadow}.
+\end{itemize}
+
+Iter8 zwracał werdykt \texttt{pass}, co oznacza spełnienie kryteriów jakości dla wersji kandydackiej.
+
+\section{Wyniki scenariusza przeciążeniowego}
+Przy zwiększonym obciążeniu zaobserwowano wzrost czasu odpowiedzi SMF v2, jednak bez przekroczenia progu 100 ms w oknie referencyjnym. Wariant ten potwierdził, że:
+\begin{itemize}
+    \item polityka mirrorowania nie destabilizuje ścieżki produkcyjnej,
+    \item komponent shadow wymaga odrębnego planowania zasobów,
+    \item utrzymanie zapasu CPU i pamięci jest kluczowe dla wiarygodnej walidacji.
+\end{itemize}
+
+\section{Wyniki scenariusza błędów}
+W scenariuszu kontrolowanym, gdzie wprowadzono sztuczny błąd w logice SMF v2, odsetek błędów HTTP wzrósł powyżej przyjętego limitu. Iter8 zwrócił werdykt \texttt{fail}, co skutecznie zablokowało promocję wersji.
+
+Wynik ten potwierdza praktyczną użyteczność automatycznych \emph{quality gates} i zasadność stosowania metryk pochodzących bezpośrednio z Service Mesh, co jest spójne z praktykami nowoczesnych strategii canary/shadow~\cite{fink2017canary}.
+
+\section{Analiza korzyści i kosztów}
+Najważniejsze korzyści wdrożenia Shadow Deploy:
+\begin{itemize}
+    \item redukcja ryzyka wdrożeń na krytycznych funkcjach 5G Core,
+    \item szybsze wykrywanie regresji wydajnościowych i funkcjonalnych,
+    \item większa przewidywalność procesu release management.
+\end{itemize}
+
+Najważniejsze koszty i wyzwania:
+\begin{itemize}
+    \item dodatkowe zużycie zasobów przez ścieżkę shadow,
+    \item większa złożoność konfiguracji Service Mesh i obserwowalności,
+    \item konieczność utrzymania spójnych danych testowych w \texttt{udr-shadow}.
+\end{itemize}
+
+\section{Dyskusja}
+Uzyskane rezultaty wskazują, że architektura Shadow Deploy jest szczególnie użyteczna dla funkcji kontrolnych 5G Core, gdzie koszt błędu produkcyjnego jest wysoki. W praktyce operatora podejście to może stanowić etap pośredni między testami laboratoryjnymi a pełnym wdrożeniem produkcyjnym.
+
+Jednocześnie skuteczność metody zależy od jakości zdefiniowanych metryk i progów SLO. Zbyt liberalne progi zwiększają ryzyko przepuszczenia regresji, natomiast zbyt restrykcyjne progi mogą blokować poprawne wdrożenia. W praktyce użyteczne jest łączenie oceny metrycznej z analizą odpowiedzi przy pomocy narzędzi takich jak Diffy~\cite{diffyGithub}.
+
+\input{chapters/metrics/metrics-section}

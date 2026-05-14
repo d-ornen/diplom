@@ -1,0 +1,126 @@
+\chapter{Diagramy C4 architektury Shadow Deploy}
+\label{chap:c4-mermaid}
+
+Niniejszy dodatek zawiera źródła diagramów C4 przygotowanych w składni Mermaid dla architektury Shadow Deploy funkcji SMF w 5G Core. Diagramy te stanowią źródło do generowania grafik wykorzystywanych w głównej części pracy.
+
+\section{C1 -- Context Diagram}
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,caption=C1 Context Diagram w Mermaid,label=lst:c1-mermaid]
+C4Context
+title Shadow Deploy for 5G Core SMF - Context
+
+Person(ops, "Platform/SRE Operator", "Nadzoruje wdrozenia i SLO")
+Person(netOps, "5G Core Engineer", "Weryfikuje zachowanie SMF")
+System(ueTraffic, "5G SBA Traffic Source", "Ruch sygnalizacyjny N11/N7")
+System(shadowPlatform, "Kubernetes + Istio Shadow Platform", "SMF v1, SMF v2, UDR, obserwowalnosc")
+System_Ext(prometheus, "Prometheus", "Metryki Envoy i aplikacyjne")
+System_Ext(iter8, "Iter8", "Ocena SLO i decyzje quality gate")
+
+Rel(ueTraffic, shadowPlatform, "Wysyla ruch sygnalizacyjny")
+Rel(ops, shadowPlatform, "Zarzadza konfiguracja")
+Rel(netOps, shadowPlatform, "Analizuje porownanie v1/v2")
+Rel(shadowPlatform, prometheus, "Eksponuje metryki")
+Rel(iter8, prometheus, "Pobiera metryki PromQL")
+Rel(iter8, netOps, "Raportuje wynik SLO")
+\end{lstlisting}
+
+\section{C2 -- Container Diagram}
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,caption=C2 Container Diagram w Mermaid,label=lst:c2-mermaid]
+C4Container
+title Shadow Deploy for 5G Core SMF - Containers
+
+Person(ops, "Platform/SRE Operator")
+System_Boundary(k8sCluster, "Kubernetes Cluster (5gc namespace)") {
+  Container(istioControlPlane, "Istio Control Plane", "Istiod", "Konfiguracja ruchu i polityk mesh")
+  Container(ingressOrMeshGateway, "Mesh Entry", "Envoy", "Wejscie ruchu do uslugi SMF")
+  Container(smfService, "SMF Kubernetes Service", "ClusterIP", "Punkt dostepowy dla SMF")
+  Container(smfV1, "SMF v1", "Deployment", "Wersja produkcyjna")
+  Container(smfV2, "SMF v2 Shadow", "Deployment", "Wersja testowa obciazana mirroringiem")
+  Container(udrProd, "UDR Prod", "StatefulSet/Deployment", "Baza stanu produkcyjnego")
+  Container(udrShadow, "UDR Shadow", "StatefulSet/Deployment", "Izolowana baza testowa")
+  Container(iter8Job, "Iter8 Assess", "K8s Job/Experiment", "Walidacja SLO")
+  Container(diffy, "Diffy (opcjonalnie)", "Deployment", "Porownanie odpowiedzi v1 i v2")
+}
+System_Ext(prometheus, "Prometheus", "Scrape metryk Envoy")
+
+Rel(ops, istioControlPlane, "Zarzadza DestinationRule/VirtualService")
+Rel(ingressOrMeshGateway, smfService, "Przekazuje ruch")
+Rel(smfService, smfV1, "route 100%")
+Rel(smfService, smfV2, "mirror 10%")
+Rel(smfV1, udrProd, "R/W profile abonentow")
+Rel(smfV2, udrShadow, "R/W tylko do shadow")
+Rel(smfV1, diffy, "Payload referencyjny")
+Rel(smfV2, diffy, "Payload kandydat")
+Rel(iter8Job, prometheus, "Zapytania PromQL")
+Rel(smfV1, prometheus, "Metryki Envoy")
+Rel(smfV2, prometheus, "Metryki Envoy")
+\end{lstlisting}
+
+\section{C3 -- Component Diagram}
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,caption=C3 Component Diagram w Mermaid,label=lst:c3-mermaid]
+C4Component
+title SMF Service - Components for Shadow Validation
+
+Container_Boundary(smfBoundary, "SMF Service") {
+  Component(virtualService, "Istio VirtualService", "Istio API", "Route 100% do v1 + mirror 10% do v2")
+  Component(destinationRule, "Istio DestinationRule", "Istio API", "Subsets: v1, v2")
+  Component(smfV1Pod, "SMF v1 Pod", "SMF Application", "Sciezka produkcyjna")
+  Component(smfV2Pod, "SMF v2 Pod", "SMF Application", "Sciezka shadow")
+  Component(envoyV1, "Envoy Sidecar v1", "Envoy Proxy", "Telemetry + policy")
+  Component(envoyV2, "Envoy Sidecar v2", "Envoy Proxy", "Telemetry + policy")
+  Component(cfgV1, "ConfigMap v1", "K8s ConfigMap", "UDR endpoint: udr-prod")
+  Component(cfgV2, "ConfigMap v2", "K8s ConfigMap", "UDR endpoint: udr-shadow")
+}
+ContainerDb(udrProd, "UDR Prod", "DB", "Dane produkcyjne")
+ContainerDb(udrShadow, "UDR Shadow", "DB", "Dane shadow")
+Container(iter8, "Iter8 Assess", "Experiment", "SLO gating")
+Container_Ext(prometheus, "Prometheus", "Metrics backend")
+
+Rel(virtualService, destinationRule, "Uzywa subsetow")
+Rel(virtualService, smfV1Pod, "route")
+Rel(virtualService, smfV2Pod, "mirror")
+Rel(smfV1Pod, cfgV1, "Czyta konfiguracje")
+Rel(smfV2Pod, cfgV2, "Czyta konfiguracje")
+Rel(smfV1Pod, envoyV1, "Ruch przez sidecar")
+Rel(smfV2Pod, envoyV2, "Ruch przez sidecar")
+Rel(smfV1Pod, udrProd, "R/W")
+Rel(smfV2Pod, udrShadow, "R/W")
+Rel(envoyV1, prometheus, "Eksport metryk")
+Rel(envoyV2, prometheus, "Eksport metryk")
+Rel(iter8, prometheus, "PromQL")
+\end{lstlisting}
+
+\section{C4 -- Deployment Diagram}
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,caption=C4 Deployment Diagram w Mermaid,label=lst:c4-mermaid]
+C4Deployment
+title Shadow Deploy for SMF - Deployment View
+
+Deployment_Node(cluster, "Kubernetes Cluster", "Kubernetes") {
+  Deployment_Node(namespace5gc, "Namespace: 5gc", "Namespace") {
+    Deployment_Node(mesh, "Istio Service Mesh", "Istio") {
+      Container_Instance(vs, "VirtualService smf", "Istio CRD")
+      Container_Instance(dr, "DestinationRule smf", "Istio CRD")
+    }
+
+    Deployment_Node(prodWorkload, "Production Workload", "Kubernetes Workloads") {
+      Container_Instance(smfV1Dep, "Deployment smf-v1", "SMF + Envoy")
+      Container_Instance(udrProdDep, "StatefulSet udr-prod", "DB")
+    }
+
+    Deployment_Node(shadowWorkload, "Shadow Workload", "Kubernetes Workloads") {
+      Container_Instance(smfV2Dep, "Deployment smf-v2", "SMF + Envoy")
+      Container_Instance(udrShadowDep, "StatefulSet udr-shadow", "DB")
+      Container_Instance(diffyDep, "Deployment diffy", "Optional comparator")
+    }
+
+    Deployment_Node(validationNode, "Validation", "Kubernetes Jobs") {
+      Container_Instance(iter8Exp, "Iter8 Experiment", "custommetrics + assess")
+    }
+  }
+}
+
+Rel(vs, smfV1Dep, "route 100%")
+Rel(vs, smfV2Dep, "mirror 10%")
+Rel(smfV1Dep, udrProdDep, "DB traffic")
+Rel(smfV2Dep, udrShadowDep, "DB traffic")
+Rel(iter8Exp, smfV2Dep, "Evaluate SLO via metrics")
+\end{lstlisting}

@@ -1,0 +1,47 @@
+\chapter{Metodyka walidacji}
+
+\section{Założenia eksperymentu}
+Celem eksperymentu jest ocena, czy wersja kandydacka SMF v2 spełnia wymagania jakościowe przed promocją do roli wersji produkcyjnej. W odróżnieniu od testów syntetycznych, podejście Shadow Deploy wykorzystuje ruch zbliżony do rzeczywistego profilu obciążenia.
+
+W badaniu przyjęto następujące zasady:
+\begin{itemize}
+    \item ruch użytkownika zawsze obsługiwany jest przez SMF v1,
+    \item SMF v2 otrzymuje wyłącznie kopię żądań,
+    \item dane zapisywane przez SMF v2 trafiają wyłącznie do \texttt{udr-shadow}.
+\end{itemize}
+
+\section{Metryki i cele SLO}
+Do oceny jakości użyto metryk pochodzących z Envoy i agregowanych przez Prometheus. Przyjęto dwa główne wskaźniki:
+\begin{itemize}
+    \item \textbf{Średnia latencja} (\texttt{latency\_avg\_ms}) dla ruchu do \texttt{smf-v2},
+    \item \textbf{Odsetek błędów HTTP} (\texttt{error\_rate}) liczony na podstawie kodów 4xx/5xx.
+\end{itemize}
+
+Kryteria akceptacyjne:
+\begin{itemize}
+    \item \texttt{error\_rate <= 0},
+    \item \texttt{latency\_avg\_ms < 100}.
+\end{itemize}
+
+Progi zdefiniowano celowo restrykcyjnie, aby ograniczyć ryzyko wprowadzania regresji na ścieżkę produkcyjną.
+
+\section{Scenariusze walidacyjne}
+W ramach pracy zdefiniowano trzy scenariusze:
+\begin{enumerate}
+    \item \textbf{Scenariusz bazowy} -- mirrorowanie 10\% ruchu przy nominalnym obciążeniu.
+    \item \textbf{Scenariusz przeciążeniowy} -- wzrost liczby żądań i obserwacja stabilności opóźnień.
+    \item \textbf{Scenariusz błędów aplikacyjnych} -- wymuszenie odpowiedzi błędnych w v2 i weryfikacja, czy mechanizm SLO blokuje promocję.
+\end{enumerate}
+
+\section{Procedura pomiarowa}
+Każdy scenariusz realizowano według tej samej procedury:
+\begin{enumerate}
+    \item Uruchomienie SMF v1 i SMF v2 oraz aktywacja reguł Istio.
+    \item Potwierdzenie separacji danych (\texttt{udr-prod} i \texttt{udr-shadow}).
+    \item Zbieranie metryk przez ustalone okno czasowe.
+    \item Uruchomienie zadania \texttt{custommetrics} i \texttt{assess} w Iter8.
+    \item Rejestracja wyniku \texttt{pass/fail} i analiza przyczyn.
+\end{enumerate}
+
+\section{Ograniczenia metody}
+Przedstawiona metodyka nie obejmuje pełnego testowania długookresowego, np. efektu zmian konfiguracji po wielu dniach ciągłej pracy ani wpływu awarii międzystrefowych. Mimo tego umożliwia wiarygodną ocenę regresji wydajności i poprawności zachowania funkcji w krótkich cyklach wdrożeniowych.

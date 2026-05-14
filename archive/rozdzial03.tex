@@ -1,0 +1,85 @@
+\chapter{Implementacja}
+
+\section{Środowisko implementacyjne}
+Implementację przygotowano jako zestaw artefaktów \emph{Infrastructure as Code}, z podziałem na:
+\begin{itemize}
+    \item warstwę Terraform (\texttt{providers.tf}, \texttt{variables.tf}, \texttt{main.tf}, \texttt{outputs.tf}),
+    \item konfigurację Istio (\texttt{istiod-values.yaml}, \texttt{namespace-5gc.yaml}),
+    \item manifesty workloadów i danych (\texttt{manifests/*}).
+\end{itemize}
+
+Podejście to umożliwia odtwarzalne wdrożenia oraz formalną kontrolę zmian w repozytorium kodu.
+
+\section{Implementacja warstwy platformowej}
+W Terraform zdefiniowano parametry pojemnościowe klastra dla obciążenia 5G SBA, w tym:
+\begin{itemize}
+    \item pule workerów dla ścieżki produkcyjnej i shadow,
+    \item namespace \texttt{5gc} z etykietą \texttt{istio-injection=enabled},
+    \item limitowanie zasobów poprzez \texttt{ResourceQuota}.
+\end{itemize}
+
+Przykładowy fragment deklaracji namespace:
+\begin{lstlisting}[language=JavaScript,style=JavaScriptStyle,caption=Definicja namespace z auto-injection,label=lst:ns-5gc]
+resource "kubernetes_namespace" "fivegc" {
+  metadata {
+    name = var.fivegc_namespace
+    labels = {
+      "istio-injection" = "enabled"
+      "platform"        = "5g-core"
+      "shadow-mode"     = "enabled"
+    }
+  }
+}
+\end{lstlisting}
+
+\section{Implementacja izolacji danych}
+W warstwie danych przygotowano dwa niezależne StatefulSety:
+\begin{itemize}
+    \item \texttt{udr-prod} -- baza produkcyjna,
+    \item \texttt{udr-shadow} -- baza testowa dla wersji kandydackiej.
+\end{itemize}
+
+Do każdej bazy przypisano oddzielny sekret i osobną usługę Kubernetes. Rozdzielenie poświadczeń uniemożliwia wykorzystanie danych produkcyjnych przez SMF v2.
+
+\section{Implementacja SMF v1 i SMF v2}
+Wersja stabilna \texttt{smf-v1} i wersja shadow \texttt{smf-v2} zostały uruchomione jako niezależne deploymenty. Obie wersje są selekcjonowane przez etykietę \texttt{version}, co pozwala na przypisanie ich do subsetów Istio.
+
+Izolację połączeń bazodanowych zrealizowano przez oddzielne \texttt{ConfigMap}:
+\begin{itemize}
+    \item \texttt{smf-v1-config} wskazuje \texttt{udr-prod},
+    \item \texttt{smf-v2-config} wskazuje \texttt{udr-shadow}.
+\end{itemize}
+
+\section{Implementacja traffic mirroring}
+Mechanizm mirrorowania zdefiniowano przez \texttt{DestinationRule} i \texttt{VirtualService}. Konfiguracja zapewnia:
+\begin{itemize}
+    \item obsługę całego ruchu przez \texttt{v1},
+    \item przesył kopii 10\% żądań do \texttt{v2}.
+\end{itemize}
+
+Przykładowy fragment reguły:
+\begin{lstlisting}[language=JavaScript,style=JavaScriptStyle,caption=Fragment VirtualService z mirrorowaniem,label=lst:vs-mirror]
+http:
+  - name: smf-shadow-mirroring
+    route:
+      - destination:
+          host: smf.5gc.svc.cluster.local
+          subset: v1
+        weight: 100
+    mirror:
+      host: smf.5gc.svc.cluster.local
+      subset: v2
+    mirrorPercentage:
+      value: 10.0
+\end{lstlisting}
+
+\section{Implementacja walidacji jakości}
+Warstwę walidacyjną zbudowano na Iter8 i Prometheus. Eksperyment Iter8:
+\begin{itemize}
+    \item pobiera metryki \texttt{latency\_avg\_ms} i \texttt{error\_rate} zapytaniami PromQL,
+    \item porównuje wynik z progami SLO,
+    \item zwraca werdykt \texttt{pass/fail}.
+\end{itemize}
+
+Dodatkowo zdefiniowano opcjonalny deployment Diffy do porównania odpowiedzi API wersji stabilnej i kandydackiej z pominięciem pól zaszumionych (np. znaczniki czasu).
+

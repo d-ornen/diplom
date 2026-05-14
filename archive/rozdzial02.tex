@@ -1,0 +1,81 @@
+\chapter{Projekt rozwiązania}
+
+\section{Wymagania}
+\subsection*{Wymagania funkcjonalne}
+\begin{itemize}
+    \item System musi umożliwiać równoległe uruchomienie wersji stabilnej SMF v1 oraz wersji shadow SMF v2.
+    \item Ruch produkcyjny musi być obsługiwany przez SMF v1, a kopia żądań przekazywana do SMF v2.
+    \item System musi wymuszać izolację stanu danych dla wersji shadow (oddzielna baza \texttt{udr-shadow}).
+    \item Architektura musi umożliwiać ocenę jakości wersji v2 na podstawie metryk z Service Mesh.
+\end{itemize}
+
+\subsection*{Wymagania niefunkcjonalne}
+\begin{itemize}
+    \item Rozwiązanie musi być oparte o narzędzia \emph{cloud native} i opisywane jako IaC.
+    \item Konfiguracja powinna być przenośna między środowiskami laboratoryjnymi i operatorskimi.
+    \item Walidacja ma być bezinwazyjna dla ruchu użytkowników i odporna na awarie shadow.
+    \item Proces oceny wdrożenia powinien wspierać automatyzację decyzji \emph{go/no-go}.
+\end{itemize}
+
+\section{Architektura logiczna}
+Zaproponowana architektura obejmuje cztery warstwy:
+\begin{enumerate}
+    \item \textbf{Warstwa uruchomieniowa} -- klaster Kubernetes z namespace \texttt{5gc}~\cite{kubernetesDocs}.
+    \item \textbf{Warstwa komunikacyjna} -- Istio z sidecarami Envoy oraz regułami routingu~\cite{istioDocs,envoyDocs}.
+    \item \textbf{Warstwa funkcjonalna} -- wdrożenia SMF v1 i SMF v2.
+    \item \textbf{Warstwa danych i walidacji} -- UDR produkcyjny, UDR shadow, Prometheus i Iter8.
+\end{enumerate}
+
+Model ruchu działa następująco: żądanie klienta trafia do usługi \texttt{smf}, następnie \texttt{VirtualService} przekazuje je do subsetu \texttt{v1}, a jego kopię do subsetu \texttt{v2}. Odpowiedź do klienta zwracana jest wyłącznie z v1.
+
+\section{Projekt izolacji danych}
+W pracy przyjęto zasadę twardej separacji stanu pomiędzy ścieżką produkcyjną i testową:
+\begin{itemize}
+    \item SMF v1 korzysta wyłącznie z \texttt{udr-prod},
+    \item SMF v2 korzysta wyłącznie z \texttt{udr-shadow},
+    \item poświadczenia dostępowe są rozdzielone na osobne sekrety Kubernetes.
+\end{itemize}
+
+Takie podejście chroni profile abonentów przed modyfikacją przez kod testowy i umożliwia bezpieczne uruchamianie eksperymentów na ruchu produkcyjnym.
+
+\section{Projekt routingu Service Mesh}
+Routing zrealizowano przez dwa obiekty Istio~\cite{istioDestinationRule,istioVirtualService}:
+\begin{itemize}
+    \item \texttt{DestinationRule} definiujący subsety \texttt{v1} oraz \texttt{v2} na podstawie etykiety \texttt{version},
+    \item \texttt{VirtualService} realizujący:
+    \begin{itemize}
+        \item \texttt{route} 100\% do \texttt{v1},
+        \item \texttt{mirror} do \texttt{v2},
+        \item \texttt{mirrorPercentage} ustawione początkowo na 10\%.
+    \end{itemize}
+\end{itemize}
+
+Taka konfiguracja pozwala zwiększać wolumen mirrorowanego ruchu etapowo, zależnie od wyników walidacji.
+
+\section{Projekt obserwowalności i kryteriów SLO}
+Walidacja jakości opiera się o metryki Envoy eksportowane do Prometheus~\cite{prometheusDocs}:
+\begin{itemize}
+    \item średnie opóźnienie żądań dla \texttt{smf-v2},
+    \item odsetek błędów HTTP 4xx/5xx dla \texttt{smf-v2}.
+\end{itemize}
+
+Dla automatycznej oceny przyjęto progi:
+\begin{itemize}
+    \item \texttt{error\_rate <= 0},
+    \item \texttt{latency\_avg\_ms < 100}.
+\end{itemize}
+
+Ocena jest realizowana przez eksperyment Iter8 (\texttt{custommetrics} + \texttt{assess}), co umożliwia wpięcie procesu w pipeline CI/CD~\cite{iter8Docs}.
+
+\section{Artefakty projektowe}
+Projekt został odwzorowany w artefaktach IaC:
+\begin{itemize}
+    \item Terraform: definicja bazowej warstwy platformowej klastra i namespace,
+    \item YAML: workloady SMF, UDR, konfiguracja Istio oraz walidacja Iter8,
+    \item YAML (opcjonalnie): deployment Diffy do porównania odpowiedzi.
+\end{itemize}
+
+Przyjęty podział plików umożliwia niezależne rozwijanie warstwy infrastruktury, routingu i walidacji jakości.
+
+\section{Modelowanie C4 i materiał diagramowy}
+Architektura została dodatkowo opisana zestawem diagramów C4 w składni Mermaid. Pełny kod źródłowy diagramów (C1, C2, C3, C4) umieszczono w dodatku \ref{chap:c4-mermaid}, natomiast instrukcję eksportu i osadzania wykresów w LaTeX przedstawiono w dodatku \ref{chap:mermaid-latex}.

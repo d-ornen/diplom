@@ -1,0 +1,57 @@
+\chapter{Instrukcja eksportu Mermaid do LaTeX}
+\label{chap:mermaid-latex}
+
+\section{Cel dodatku}
+W dodatku przedstawiono powtarzalną procedurę przekształcenia diagramów Mermaid (C4) do postaci grafik osadzanych w dokumencie LaTeX.
+
+\section{Organizacja plików}
+Zalecana struktura:
+\begin{itemize}
+    \item źródła Mermaid: \texttt{images/diagrams-src/*.mmd},
+    \item wygenerowane grafiki: \texttt{images/diagrams/*.pdf} lub \texttt{images/diagrams/*.svg}.
+\end{itemize}
+
+Rekomendowane nazwy plików:
+\begin{itemize}
+    \item \texttt{c1-context},
+    \item \texttt{c2-container},
+    \item \texttt{c3-component-smf},
+    \item \texttt{c4-deployment}.
+\end{itemize}
+
+\section{Eksport z Mermaid CLI}
+Do eksportu można użyć narzędzia \texttt{mmdc}:
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,caption=Eksport diagramu do SVG,label=lst:mmdc-svg]
+mmdc -i diagram.mmd -o images/diagram.svg -t neutral -b transparent
+\end{lstlisting}
+
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,caption=Eksport diagramu do PDF,label=lst:mmdc-pdf]
+mmdc -i diagram.mmd -o images/diagram.pdf -t neutral -b white
+\end{lstlisting}
+
+\section{Osadzanie diagramu w rozdziale LaTeX}
+Przykład osadzenia:
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,caption=Wstawienie diagramu C2 do LaTeX,label=lst:latex-include-c2]
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\linewidth]{images/diagrams/c2-container.pdf}
+  \caption{C2 Container Diagram dla Shadow Deploy SMF}
+  \label{fig:c2-shadow-smf}
+\end{figure}
+\end{lstlisting}
+
+\section{Jak wyodrębnić kod Mermaid}
+Kod diagramu należy skopiować z bloku oznaczonego:
+\begin{itemize}
+    \item początkiem \texttt{```mermaid},
+    \item końcem \texttt{```}.
+\end{itemize}
+
+Każdy diagram powinien zostać zapisany do osobnego pliku \texttt{.mmd}, a następnie wyeksportowany do PDF lub SVG.
+
+\section{Dobre praktyki}
+\begin{itemize}
+    \item Do wersji drukowanej preferować PDF.
+    \item Stosować spójne nazwy plików i etykiet \texttt{\textbackslash label\{\}}.
+    \item Po każdej zmianie architektury regenerować grafiki z tych samych plików źródłowych.
+\end{itemize}

@@ -1,0 +1,32 @@
+\chapter{Podsumowanie}
+\label{chap:podsumowanie}
+W pracy opracowano i opisano kompletną architekturę Shadow Deploy dla funkcji SMF w środowisku 5G Core. Przyjęty model łączy Kubernetes, Istio i Envoy z metryczną walidacją jakości opartą o Prometheus i Iter8.
+
+\section{Stopień realizacji celu}
+Cel pracy został zrealizowany. Przygotowane rozwiązanie spełnia założenia:
+\begin{itemize}
+    \item realizuje bezinwazyjne mirrorowanie ruchu do wersji kandydackiej,
+    \item izoluje stan danych wersji shadow od danych produkcyjnych,
+    \item dostarcza automatyczny mechanizm oceny jakości na podstawie SLO.
+\end{itemize}
+
+\section{Najważniejsze wnioski}
+\begin{enumerate}
+    \item Shadow Deploy w Service Mesh pozwala testować nową wersję funkcji na ruchu produkcyjnym bez ryzyka wpływu na użytkowników.
+    \item Separacja bazy \texttt{udr-shadow} jest warunkiem koniecznym bezpiecznej walidacji funkcji kontrolnych 5G Core.
+    \item Metryki z Envoy i Prometheus są wystarczające do budowy obiektywnego \emph{quality gate} wspierającego decyzję o promocji wersji.
+\end{enumerate}
+
+\section{Ograniczenia}
+Praca koncentruje się na funkcji SMF i scenariuszach krótkookresowych. Nie obejmuje pełnego spektrum awarii wieloregionowych, aspektów kosztowych dużych klastrów operatorskich ani długoterminowej degradacji parametrów.
+
+\section{Kierunki dalszych prac}
+W dalszym etapie warto rozszerzyć rozwiązanie o:
+\begin{itemize}
+    \item adaptacyjne sterowanie \texttt{mirrorPercentage} zależnie od bieżącej jakości usług,
+    \item automatyczne rollbacki uruchamiane przez sygnały SLO,
+    \item rozszerzenie modelu na kolejne funkcje 5G Core (AMF, PCF, NRF),
+    \item integrację z politykami bezpieczeństwa typu zero trust w warstwie mesh.
+\end{itemize}
+
+Przedstawione podejście stanowi praktyczny fundament do budowy bezpiecznego procesu wdrożeń CNF w środowiskach telekomunikacyjnych klasy operatorskiej.
